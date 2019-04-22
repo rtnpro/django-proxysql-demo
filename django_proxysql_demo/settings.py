@@ -75,8 +75,12 @@ WSGI_APPLICATION = 'django_proxysql_demo.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('DB_DEFAULT_NAME', 'django_proxysql_demo'),
+        'USER': os.environ.get('DB_DEFAULT_USER', 'djproxysql'),
+        'PASSWORD': os.environ.get('DB_DEFAULT_PASSWORD', 'password'),
+        'HOST': os.environ.get('DB_DEFAULT_HOST', 'localhost'),
+        'PORT': int(os.environ.get('DB_DEFAULT_PORT', 3306))
     }
 }
 
