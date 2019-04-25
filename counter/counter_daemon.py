@@ -2,6 +2,7 @@ import functools
 import logging
 import os
 import random
+import signal
 import time
 
 from concurrent import futures
@@ -20,6 +21,16 @@ def close_all_connections():
     db.connections.close_all()
 
 
+def handle_sigterm(signum, frame):
+    logger.warning('Handling sigterm')
+    close_all_connections()
+
+
+def initialize_worker():
+    close_all_connections
+    signal.signal(signal.SIGTERM, handle_sigterm)
+
+
 def incr(bucket_id, sleep=0.01):
     pid = os.getpid()
     logger.info('Increment\tpid:{}\tbucket:{}'.format(pid, bucket_id))
@@ -33,7 +44,8 @@ def incr(bucket_id, sleep=0.01):
             counter.save()
             count = counter.count
     except Exception as e:
-        logger.error('IncrementError\tpid: {}\tbucket: {}\n{}'.format(pid, bucket_id, e), exc_info=True)
+        logger.warning('counter: {}, created: {}'.format(counter, created))
+        logger.exception('IncrementError\tpid: {}\tbucket: {}\n{}'.format(pid, bucket_id, e))
     finally:
         close_all_connections()
     return count
@@ -59,11 +71,11 @@ class CounterDaemon(object):
             result = future.result()
             logger.info('Result: {}\tpid: {}\tbucket: {}'.format(result, pid, bucket_id))
         except futures.TimeoutError as e:
-            logger.error('TimeoutError\tpid: {}\tbucket: {}'.format(pid, bucket_id))
+            logger.warning('TimeoutError\tpid: {}\tbucket: {}'.format(pid, bucket_id))
         except futures.CancelledError:
             return
         except Exception as e:
-            logger.error('TaskError\t pid: {}\tbucket: {}\tError: {}'.format(pid, bucket_id, e), exc_info=True)
+            logger.exception('TaskError\t pid: {}\tbucket: {}\tError: {}'.format(pid, bucket_id, e))
 
     def run_once(self):
         for bucket_id in random.sample(BUCKET_RANGE, self.workers):
@@ -78,14 +90,19 @@ class CounterDaemon(object):
 
     def run_forever(self):
         while True:
-            self.run_once()
+            try:
+                self.run_once()
+            except Exception as e:
+                logger.exception('RunOnceError: {}'.format(e))
             time.sleep(self.poll_interval or (3 * self.task_timeout))
 
     def start(self):
         try:
             self.run_forever()
         except Exception as e:
-            logger.error('Error during running daemon: {}'.format(e))
+            logger.exception('Error during running daemon: {}'.format(e))
             self.pool.close()
+            time.sleep(10)
+            self.pool.stop()
         finally:
             self.pool.join()
