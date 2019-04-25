@@ -50,7 +50,7 @@ LOGGING = {
     'loggers': {
         'counter': {
             'handlers': ['console', 'file'],
-            'level': 'INFO',
+            'level': 'ERROR',
             'propagate': True
         }
     }

@@ -22,7 +22,7 @@ class Command(BaseCommand):
             '--poll-interval',
             dest='poll_interval',
             default=None,
-            type=int,
+            type=float,
             help='Poll interval.')
         parser.add_argument(
             '--task-timeout',
