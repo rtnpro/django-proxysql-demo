@@ -33,13 +33,13 @@ def initialize_worker():
 
 def incr(bucket_id, sleep=0.01):
     pid = os.getpid()
-    logger.info('Increment\tpid:{}\tbucket:{}'.format(pid, bucket_id))
+    logger.debug('Increment\tpid:{}\tbucket:{}'.format(pid, bucket_id))
     count = None
     try:
         with transaction.atomic():
             counter, created = Counter.objects.get_or_create(bucket=bucket_id)
             counter.count += 1
-            logger.info('Sleeping for {}\tpid: {}\tbucket: {}'.format(sleep, pid, bucket_id))
+            logger.debug('Sleeping for {}\tpid: {}\tbucket: {}'.format(sleep, pid, bucket_id))
             time.sleep(sleep)
             counter.save()
             count = counter.count
@@ -69,7 +69,7 @@ class CounterDaemon(object):
         pid = os.getpid()
         try:
             result = future.result()
-            logger.info('Result: {}\tpid: {}\tbucket: {}'.format(result, pid, bucket_id))
+            logger.debug('Result: {}\tpid: {}\tbucket: {}'.format(result, pid, bucket_id))
         except futures.TimeoutError as e:
             logger.warning('TimeoutError\tpid: {}\tbucket: {}'.format(pid, bucket_id))
         except futures.CancelledError:
