@@ -18,23 +18,24 @@ def run_savepoints(bucket_id):
                 logger.info('run_savepoints index: %s\tinitial count: %s', i, bucket.count)
                 bucket.count = i
                 bucket.save()
-                sid = transaction.savepoint()
 
-                bucket = Counter.objects.get(bucket=bucket_id)
-                if bucket.count != i:
-                    logger.error('run_savepoints index: %s\texpected_count: %s \tcount: %s', i, i, bucket.count)
+                try:
+                    with transaction.atomic():
+                        bucket = Counter.objects.get(bucket=bucket_id)
+                        if bucket.count != i:
+                            logger.error('run_savepoints index: %s\texpected_count: %s \tcount: %s', i, i, bucket.count)
 
-                bucket.count = i + 1
-                bucket.save()
+                        bucket.count = i + 1
+                        bucket.save()
 
-                bucket = Counter.objects.get(bucket=bucket_id)
-                if bucket.count != (i + 1):
-                    logger.error('run_savepoints index: %s\texpected_count: %s \tcount: %s', i, i + 1, bucket.count)
+                        bucket = Counter.objects.get(bucket=bucket_id)
+                        if bucket.count != (i + 1):
+                            logger.error('run_savepoints index: %s\texpected_count: %s \tcount: %s', i, i + 1, bucket.count)
 
-                if bucket.count % 2 == 0:
-                    transaction.savepoint_commit(sid)
-                else:
-                    transaction.savepoint_rollback(sid)
+                        if bucket.count % 2 != 0:
+                            raise
+                except:
+                    pass
 
                 bucket = Counter.objects.get(bucket=bucket_id)
                 if bucket.count != (i + 1 * (i % 2)):
