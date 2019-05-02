@@ -203,6 +203,44 @@ def run_atomic_transactions(name, bucket_id):
         time.sleep(1)
 
 class Command(BaseCommand):
+    """
+    This command tests running two processes in parallel running transactions.
+    `run_atomic_transactions` runs plain `atomic` transactions and
+    `run_savepoints` runs nested `atomic` transactions which internally uses
+    `SAVEPOINT` queries.
+
+    This is how the script should work.
+
+    At t=0, `run_atomic_transactions` and `run_savepoints` starts almost together
+    and they both read the same `count` value from `count` row with `bucket` id `1`.
+    In this case, count is 203.
+
+    At t=1, `run_atomic_transactions` updates `count` field.
+
+    At t=1.5, `run_savepoints` reads `count` for `bucket` id 1, and still sees the
+    initial count value, i.e., 203, indicating that there was no dirty read.
+
+    At t=2, `run_atomic_transactions` successfully commits the atomic transaction
+    and sets count to 200
+
+    At t=2.5, `run_savepoints` reads count for bucket_id 1, and sees the
+    newly committed value by `run_atomic_transactions`, which is 200. It then
+    goes ahead and updates the count value to 1. It then enters the inner
+    transaction block and increment count value by 1, which means count becomes
+    2. Since count is even, it gets committed in the inner transaction block
+    (if count were odd, it would have been rollbacked to value set by
+    the outer transaction). Please not that the outer block transaction has
+    not yet been committed.
+
+    At t=3, `run_atomic_transactions` reads count for bucket_id 1 and
+    sees the value it had committed, 200.
+
+    At t=3.5, `run_savepoints` exits the outer transaction block by setting
+    count to 2.
+
+    At t=4, the next loop starts for both `run_atomic_transactions` and `run_savepoints`
+    where they both start with count set to 2.
+    """
 
     def handle(self, *args, **options):
         bucket_id = 1
