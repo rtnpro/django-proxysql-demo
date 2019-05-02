@@ -109,7 +109,10 @@ DATABASES = {
         'USER': os.environ.get('DB_DEFAULT_USER', 'djproxysql'),
         'PASSWORD': os.environ.get('DB_DEFAULT_PASSWORD', 'password'),
         'HOST': os.environ.get('DB_DEFAULT_HOST', 'localhost'),
-        'PORT': int(os.environ.get('DB_DEFAULT_PORT', 3306))
+        'PORT': int(os.environ.get('DB_DEFAULT_PORT', 3306)),
+        'OPTIONS': {
+            'isolation_level': 'read committed'
+        }
     }
 }
 
