@@ -111,7 +111,7 @@ DATABASES = {
         'HOST': os.environ.get('DB_DEFAULT_HOST', 'localhost'),
         'PORT': int(os.environ.get('DB_DEFAULT_PORT', 3306)),
         'OPTIONS': {
-            'isolation_level': 'read committed'
+            'isolation_level': os.environ.get('TX_ISOLATION', 'read committed')
         }
     }
 }
