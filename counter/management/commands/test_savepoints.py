@@ -11,6 +11,7 @@ from counter.models import Counter
 logger = logging.getLogger('counter')
 
 def run_savepoints(name, bucket_id):
+    bucket, _ = Counter.objects.get_or_create(bucket=bucket_id)
     for i in range(1, 4):
         connections.close_all()
         try:
@@ -154,6 +155,7 @@ def run_savepoints(name, bucket_id):
 
 
 def run_atomic_transactions(name, bucket_id):
+    bucket, _ = Counter.objects.get_or_create(bucket=bucket_id)
     for i in range(200, 204):
         connections.close_all()
         try:
