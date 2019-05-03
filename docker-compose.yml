@@ -1,0 +1,69 @@
+version: "2"
+
+services:
+  app_db:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    links:
+      - db1
+    volumes:
+      - ./:/src/django_proxysql_demo
+    command: bash -c "./manage.py migrate && ./manage.py runserver 0.0.0.0:8000"
+    environment:
+      DB_DEFAULT_NAME: 'app'
+      DB_DEFAULT_USER: 'app'
+      DB_DEFAULT_PASSWORD: 'password'
+      DB_DEFAULT_HOST: 'db1'
+      DB_DEFAULT_PORT: 3306
+    expose:
+    - "8000"
+    ports:
+      - 127.0.0.1:8000:8000
+    restart: on-failure
+  app_proxysql:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    links:
+      - proxysql
+    volumes:
+      - ./:/src/django_proxysql_demo
+    command: "./manage.py runserver 0.0.0.0:8000"
+    environment:
+      DB_DEFAULT_NAME: 'app'
+      DB_DEFAULT_USER: 'app'
+      DB_DEFAULT_PASSWORD: 'password'
+      DB_DEFAULT_HOST: 'proxysql'
+      DB_DEFAULT_PORT: 6033
+    expose:
+      - "8000"
+    ports:
+      - 127.0.0.1:8001:8000
+    restart: on-failure
+  proxysql:
+    image: severalnines/proxysql:1.4.15
+    links:
+      - db1
+    ports:
+      # ProxySQL admin port for MySQL commands
+      - "16032:6032"
+      # ProxySQL main port
+      - "16033:6033"
+    volumes:
+      - ./proxysql.cnf:/etc/proxysql.cnf
+
+  db1:
+    image: mysql:5.7
+    command: "mysqld --transaction-isolation='repeatable-read'"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: app
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: app
+    volumes:
+      - ./data:/var/lib/mysql
+    expose:
+      - "3306"
+    ports:
+      - "13306:3306"
