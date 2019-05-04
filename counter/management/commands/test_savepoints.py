@@ -10,9 +10,8 @@ from counter.models import Counter
 
 logger = logging.getLogger('counter')
 
-def run_savepoints(name, bucket_id):
-    bucket, _ = Counter.objects.get_or_create(bucket=bucket_id)
-    for i in range(1, 4):
+def run_savepoints(name, bucket_id, trials=1):
+    for i in range(1, (1 + trials)):
         connections.close_all()
         try:
             with transaction.atomic():
@@ -22,7 +21,7 @@ def run_savepoints(name, bucket_id):
                 transaction_type = 'outer'
 
                 logger.info(
-                    '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                    '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                     name,
                     i,
                     transaction_type,
@@ -33,7 +32,7 @@ def run_savepoints(name, bucket_id):
                 bucket = Counter.objects.get(bucket=bucket_id)
 
                 logger.info(
-                    '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                    '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                     name,
                     i,
                     transaction_type,
@@ -45,7 +44,7 @@ def run_savepoints(name, bucket_id):
                 bucket = Counter.objects.get(bucket=bucket_id)
 
                 logger.info(
-                    '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                    '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                     name,
                     i,
                     transaction_type,
@@ -57,7 +56,7 @@ def run_savepoints(name, bucket_id):
                 bucket = Counter.objects.get(bucket=bucket_id)
 
                 logger.info(
-                    '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                    '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                     name,
                     i,
                     transaction_type,
@@ -70,7 +69,7 @@ def run_savepoints(name, bucket_id):
                         bucket = Counter.objects.get(bucket=bucket_id)
 
                         logger.info(
-                            '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                            '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                             name,
                             i,
                             transaction_type,
@@ -79,7 +78,7 @@ def run_savepoints(name, bucket_id):
 
                         if bucket.count != i:
                             logger.error(
-                                '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                                '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                                 name,
                                 i,
                                 transaction_type,
@@ -92,7 +91,7 @@ def run_savepoints(name, bucket_id):
                         bucket = Counter.objects.get(bucket=bucket_id)
 
                         logger.info(
-                            '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                            '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                             name,
                             i,
                             transaction_type,
@@ -101,7 +100,7 @@ def run_savepoints(name, bucket_id):
 
                         if bucket.count != (i + 1):
                             logger.error(
-                                '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                                '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                                 name,
                                 i,
                                 transaction_type,
@@ -116,7 +115,7 @@ def run_savepoints(name, bucket_id):
                 finally:
                     bucket = Counter.objects.get(bucket=bucket_id)
                     logger.info(
-                        '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                        '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                         name,
                         i,
                         transaction_type,
@@ -128,7 +127,7 @@ def run_savepoints(name, bucket_id):
 
                 bucket = Counter.objects.get(bucket=bucket_id)
                 logger.info(
-                    '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                    '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                     name,
                     i,
                     transaction_type,
@@ -136,14 +135,14 @@ def run_savepoints(name, bucket_id):
                     bucket.count)
                 if bucket.count != (i + 1 * (i % 2)):
                     logger.error(
-                        '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                        '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                         name,
                         i,
                         transaction_type,
                         'expected: %s' % (i + (1 * (i % 2))),  # event
                         'Got: %s' % bucket.count)
                 logger.info(
-                    '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                    '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                     name,
                     i,
                     transaction_type,
@@ -154,16 +153,15 @@ def run_savepoints(name, bucket_id):
         time.sleep(0.5)
 
 
-def run_atomic_transactions(name, bucket_id):
-    bucket, _ = Counter.objects.get_or_create(bucket=bucket_id)
-    for i in range(200, 204):
+def run_atomic_transactions(name, bucket_id, trials=1):
+    for i in range(200, (200 + trials)):
         connections.close_all()
         try:
             with transaction.atomic():
                 transaction_type = 'main'
                 bucket = Counter.objects.get(bucket=bucket_id)
                 logger.info(
-                    '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                    '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                     name,
                     i,
                     transaction_type,
@@ -174,7 +172,7 @@ def run_atomic_transactions(name, bucket_id):
                 bucket.save()
                 bucket = Counter.objects.get(bucket=bucket_id)
                 logger.info(
-                    '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+                    '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                     name,
                     i,
                     transaction_type,
@@ -185,7 +183,7 @@ def run_atomic_transactions(name, bucket_id):
             logger.exception(e)
         bucket = Counter.objects.get(bucket=bucket_id)
         logger.info(
-            '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+            '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
             name,
             i,
             transaction_type,
@@ -195,7 +193,7 @@ def run_atomic_transactions(name, bucket_id):
 
         bucket = Counter.objects.get(bucket=bucket_id)
         logger.info(
-            '%-10s\t%-10s\t%-10s\t%-10s\t%-10s',
+            '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
             name,
             i,
             transaction_type,
@@ -244,19 +242,39 @@ class Command(BaseCommand):
     where they both start with count set to 2.
     """
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--bucket',
+            dest='bucket',
+            default=1,
+            type=int,
+            help='Counter bucket against which to run tests.')
+        parser.add_argument(
+            '--trials',
+            dest='trials',
+            default=1,
+            type=int,
+            help='Number of test trials.')
+
+
     def handle(self, *args, **options):
-        bucket_id = 1
+        trials = options['trials']
+        bucket_id = options['bucket']
 
         pool = ProcessPool(max_workers=2)
         pool._start_pool()
 
+        bucket, _ = Counter.objects.get_or_create(bucket=bucket_id)
+        bucket.count = 0
+        bucket.save()
+
         future_1 = pool.schedule(
             run_atomic_transactions,
-            args=('ATOMIC', bucket_id,)
+            args=('T1', bucket_id, trials)
         )
         future_2 = pool.schedule(
             run_savepoints,
-            args=('SAVEPOINT', bucket_id,)
+            args=('T2', bucket_id, trials)
         )
         pool.close()
         pool.join()

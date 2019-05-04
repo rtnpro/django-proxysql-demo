@@ -43,7 +43,7 @@ class Command(BaseCommand):
             type=int,
             help='Random range to pick a value from to multiply with --task-default-sleep to calculate sleep period for a task.')
 
-    def handle(elf, *args, **options):
+    def handle(self, *args, **options):
         daemon = CounterDaemon(
             workers=options['workers'],
             poll_interval=options['poll_interval'],
