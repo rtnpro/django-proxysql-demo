@@ -205,26 +205,30 @@ def run_atomic_transactions(name, bucket_id, trials=1):
 class Command(BaseCommand):
     """
     This command tests running two processes in parallel running transactions.
-    `run_atomic_transactions` runs plain `atomic` transactions and
-    `run_savepoints` runs nested `atomic` transactions which internally uses
+    `run_atomic_transactions` or `T1` runs plain `atomic` transactions and
+    `run_savepoints` or `T2` runs nested `atomic` transactions which internally uses
     `SAVEPOINT` queries.
 
     This is how the script should work.
 
-    At t=0, `run_atomic_transactions` and `run_savepoints` starts almost together
+    At t=0, `T1` and `T2` starts almost together
     and they both read the same `count` value from `count` row with `bucket` id `1`.
-    In this case, count is 203.
+    In this case, count is `0`
 
-    At t=1, `run_atomic_transactions` updates `count` field.
+    At t=1, `T1` updates `count` field.
 
-    At t=1.5, `run_savepoints` reads `count` for `bucket` id 1, and still sees the
-    initial count value, i.e., 203, indicating that there was no dirty read.
+    At t=1.5, `T2` reads `count` for `bucket` id 1. It will see different values
+    of count based on what tx_isolation is used.
 
-    At t=2, `run_atomic_transactions` successfully commits the atomic transaction
-    and sets count to 200
+    - `read-uncommitted`: 200
+    - `read-committed`: 0
+    - `repeatable-read`: 0
 
-    At t=2.5, `run_savepoints` reads count for bucket_id 1, and sees the
-    newly committed value by `run_atomic_transactions`, which is 200. It then
+    At t=2, `T1` successfully commits the atomic transaction
+    and sets count to 200.
+
+    At t=2.5, `T2` reads count for bucket_id 1, and sees the
+    newly committed value by `T1`, which is 200. It then
     goes ahead and updates the count value to 1. It then enters the inner
     transaction block and increment count value by 1, which means count becomes
     2. Since count is even, it gets committed in the inner transaction block
@@ -232,14 +236,15 @@ class Command(BaseCommand):
     the outer transaction). Please not that the outer block transaction has
     not yet been committed.
 
-    At t=3, `run_atomic_transactions` reads count for bucket_id 1 and
-    sees the value it had committed, 200.
+    At t=3, `T1` reads count for bucket_id 1 sees the following values of count for different tx_isolation levels:
 
-    At t=3.5, `run_savepoints` exits the outer transaction block by setting
-    count to 2.
+    - `read-uncommitted`: 2
+    - `read-committed`: 200
+    - `repeatable-read`: 200
 
-    At t=4, the next loop starts for both `run_atomic_transactions` and `run_savepoints`
-    where they both start with count set to 2.
+    At t=3.5, `T2` exits the outer transaction block by setting count to 2.
+
+    At t=4, next iteration for both processes start.
     """
 
     def add_arguments(self, parser):
