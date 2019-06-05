@@ -55,7 +55,7 @@ services:
 
   db1:
     image: mysql:5.7
-    command: "mysqld --transaction-isolation='repeatable-read'"
+    command: "mysqld --transaction-isolation='repeatable-read' --general-log=ON --general-log-file=/var/lib/mysql/query.log"
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_USER: app
