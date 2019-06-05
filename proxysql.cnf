@@ -28,14 +28,16 @@ mysql_variables=
         commands_stats=true
         sessions_sort=true
         autocommit_false_is_transaction=true
-        init_connect="SET SESSION TX_ISOLATION='REPEATABLE-READ'"
+        init_connect="SET SESSION TX_ISOLATION='READ-COMMITTED'"
         monitor_username="app"
         monitor_password="password"
+        enforce_autocommit_on_reads=true
+        free_connections_pct=100
 }
 
 mysql_servers =
 (
-        { address="db1" , port=3306 , hostgroup=10, max_connections=100 }
+        { address="db1" , port=3306 , hostgroup=10, max_connections=3 }
 )
 
 mysql_users =
