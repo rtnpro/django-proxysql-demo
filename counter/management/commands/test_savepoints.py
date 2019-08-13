@@ -10,7 +10,7 @@ from counter.models import Counter
 
 logger = logging.getLogger('counter')
 
-def run_savepoints(name, bucket_id, trials=1):
+def run_long_atomic_transactions(name, bucket_id, trials=1):
     for i in range(1, (1 + trials)):
         connections.close_all()
         try:
@@ -63,65 +63,63 @@ def run_savepoints(name, bucket_id, trials=1):
                     '',  # event
                     bucket.count)
 
-                try:
-                    with transaction.atomic():
-                        transaction_type = 'inner'
-                        bucket = Counter.objects.get(bucket=bucket_id)
+                # try:
+                #     with transaction.atomic():
+                transaction_type = 'inner'
+                bucket = Counter.objects.get(bucket=bucket_id)
 
-                        logger.info(
-                            '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
-                            name,
-                            i,
-                            transaction_type,
-                            'enter',  # event
-                            bucket.count)
+                logger.info(
+                    '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
+                    name,
+                    i,
+                    transaction_type,
+                    'enter',  # event
+                    bucket.count)
 
-                        if bucket.count != i:
-                            logger.error(
-                                '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
-                                name,
-                                i,
-                                transaction_type,
-                                'expected: %s' % i,  # event
-                                'Got: %s' % bucket.count)
-
-                        bucket.count = i + 1
-                        bucket.save()
-
-                        bucket = Counter.objects.get(bucket=bucket_id)
-
-                        logger.info(
-                            '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
-                            name,
-                            i,
-                            transaction_type,
-                            'save',  # event
-                            bucket.count)
-
-                        if bucket.count != (i + 1):
-                            logger.error(
-                                '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
-                                name,
-                                i,
-                                transaction_type,
-                                'expected: %s' % i + 1,  # event
-                                'Got: %s' % bucket.count)
-
-
-                        if bucket.count % 2 != 0:
-                            raise
-                except:
-                    pass
-                finally:
-                    bucket = Counter.objects.get(bucket=bucket_id)
-                    logger.info(
+                if bucket.count != i:
+                    logger.error(
                         '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
                         name,
                         i,
                         transaction_type,
-                        'exit',  # event
-                        bucket.count)
-                    transaction_type = 'outer'
+                        'expected: %s' % i,  # event
+                        'Got: %s' % bucket.count)
+
+                bucket.count = i + 1
+                bucket.save()
+
+                bucket = Counter.objects.get(bucket=bucket_id)
+
+                logger.info(
+                    '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
+                    name,
+                    i,
+                    transaction_type,
+                    'save',  # event
+                    bucket.count)
+
+                if bucket.count != (i + 1):
+                    logger.error(
+                        '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
+                        name,
+                        i,
+                        transaction_type,
+                        'expected: %s' % i + 1,  # event
+                        'Got: %s' % bucket.count)
+
+
+                if bucket.count % 2 != 0:
+                    bucket.count -= 1
+                    bucket.save()
+                bucket = Counter.objects.get(bucket=bucket_id)
+                logger.info(
+                    '%-8s\t%-8s\t%-8s\t%-8s\t%-8s',
+                    name,
+                    i,
+                    transaction_type,
+                    'exit',  # event
+                    bucket.count)
+                transaction_type = 'outer'
 
                 time.sleep(1)
 
@@ -278,7 +276,7 @@ class Command(BaseCommand):
             args=('T1', bucket_id, trials)
         )
         future_2 = pool.schedule(
-            run_savepoints,
+            run_long_atomic_transactions,
             args=('T2', bucket_id, trials)
         )
         pool.close()
